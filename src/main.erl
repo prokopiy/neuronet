@@ -13,36 +13,49 @@
 -export([start/0]).
 
 
-call(Message) ->
-  server ! {request, self(), Message},
+call(Pid, Message) ->
+  Pid ! {request, self(), Message},
   receive
-    {reply, Reply} -> Reply
+    {reply, Pid, Reply} -> Reply;
+    {reply, OtherPid, Reply} ->
+      io:format("Other ~w reply = ~w~n", [OtherPid, Reply])
   end.
 
 
+loop() ->
+  receive
+    A ->
+      io:format("loop: ~w ~n", [A]),
+      loop()
+
+  after
+    20000 ->
+      true
+  end.
+
 start() ->
   io:format("Node = ~w~n", [node()]),
+
+  N1 = neuron:new(),
+  N2 = neuron:new(),
+  link:register_many_to_many([N1], [N2], [1.0]),
+
+
+  R1 = call(N1, print),
+  io:format("Reply ~w~n", [R1]),
+
+  R2 = call(N1, {pulse, self(), 1.0}),
+  io:format("Reply ~w~n", [R2]),
+
 %%   erlang:set_cookie(node(), pass),
 %%   net_adm:ping('bar@Prokopiy-PC'),
-%%   f(3),
 
-  Serv = server:start(),
-  io:format("~w~n", [Serv]),
-
-%%   {RT, UID} = call({allocate, [3,2,1]}),
-%%   if
-%%     RT == ok ->
-%%       io:format("allocate - ~w~n", [RT]),
-%%       {RT2, R2} = call({pulse, UID, [1,1,1]}),
-%%       if
-%%         RT2 == ok ->
-%%           io:format("~w pulse - ~w result = ~w~n", [self(), RT2, R2])
-%%       end;
-%%     RT == error ->
-%%       false
-%%   end,
+%%   Serv = server:start(),
+%%   io:format("~w~n", [Serv]),
 
 
-  io:get_line(">")
+  loop(),
+
+  io:get_line("Press <Enter> to exit...")
 
 .

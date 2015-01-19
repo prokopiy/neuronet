@@ -17,35 +17,37 @@ new() ->
   spawn(neuron, loop, [N]).
 
 
-calc_and_pulse_all(PidN, Power, []) ->
+calc_and_pulse_all(PidN, {From, Power}, []) ->
   true;
-calc_and_pulse_all(PidN, Power, [H | T]) ->
+calc_and_pulse_all(PidN, {From, Power}, [H | T]) ->
   {PidOut, W} = H,
   NewP = Power * W,
-  PidOut ! {pulse, PidN, NewP},
+  PidOut ! {request, PidN, {pulse, From, NewP}},
   io:format("Create pulse ~w to ~w~n", [NewP, PidOut]),
-  calc_and_pulse_all(PidN, Power, T).
+  calc_and_pulse_all(PidN, {From, Power}, T).
 
 
 
 loop(N) ->
   receive
-    {Pid, print} ->
+    {request, Pid, print} ->
       io:format("Neuron~w ~w~n", [self(), N]),
+      Pid ! {reply, self(), ok},
       loop(N);
-    {Pid, stop} ->
+    {request, Pid, stop} ->
       io:format("Neuron~w stop~n", [self()]);
-    {set_link_out, PidN, W} ->
+    {request, PidN, {set_link_out, W}} ->
       {out, Out} = lists:keyfind(out, 1, N),
       NewOut = lists:keystore(PidN, 1, Out, {PidN, W}),
       NewN = lists:keyreplace(out, 1, N, {out, NewOut}),
       loop(NewN);
-    {set_link_in, PidN, W} ->
+    {request, PidN, {set_link_in, W}} ->
       {in, In} = lists:keyfind(in, 1, N),
       NewIn = lists:keystore(PidN, 1, In, {PidN, W}),
       NewN = lists:keyreplace(in, 1, N, {in, NewIn}),
       loop(NewN);
-    {pulse, PidN, Power} ->
+    {request, Pid, {pulse, From, Power}} ->
+      Pid ! {reply, self(), ok},
       {power, P} = lists:keyfind(power, 1, N),
       NewP = P + Power,
       {in, In} = lists:keyfind(in, 1, N),
@@ -62,12 +64,12 @@ loop(N) ->
           {out, Out} = lists:keyfind(out, 1, N),
           if
             Out == [] ->
-%%               io:format("Neuron~w: send ~w to ~w~n", [self(), S, PidN]),
-              PidN ! {effect, S};
+              io:format("Neuron~w: send ~w to ~w~n", [self(), S, From]),
+              From ! {request, self(), {effect, S}};
             Out /= [] ->
               true
           end,
-          calc_and_pulse_all(PidN, S, Out),
+          calc_and_pulse_all(self(), {From, S}, Out),
           NewN1 = lists:keyreplace(power, 1, N, {power, 0}),
           NewN2 = lists:keyreplace(num_active_links, 1, NewN1, {num_active_links, 0}),
           loop(NewN2)
