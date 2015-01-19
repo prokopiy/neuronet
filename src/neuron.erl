@@ -17,19 +17,21 @@ new() ->
   spawn(neuron, loop, [N]).
 
 
-calc_and_pulse_all(PidN, {From, Power}, []) ->
+calc_and_pulse_all(PidN, {FromPid, Power}, []) ->
   true;
-calc_and_pulse_all(PidN, {From, Power}, [H | T]) ->
+calc_and_pulse_all(PidN, {PidFrom, Power}, [H | T]) ->
   {PidOut, W} = H,
   NewP = Power * W,
-  PidOut ! {request, PidN, {pulse, From, NewP}},
+  PidOut ! {request, PidN, {pulse, PidFrom, NewP}},
   io:format("Create pulse ~w to ~w~n", [NewP, PidOut]),
-  calc_and_pulse_all(PidN, {From, Power}, T).
+  calc_and_pulse_all(PidN, {PidFrom, Power}, T).
 
 
 
 loop(N) ->
   receive
+    {reply, _, ok} ->
+      loop(N);
     {request, Pid, print} ->
       io:format("Neuron~w ~w~n", [self(), N]),
       Pid ! {reply, self(), ok},
