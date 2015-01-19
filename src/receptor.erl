@@ -9,6 +9,6 @@
 -module(receptor).
 -author("prokopiy").
 
-
+%%
 %% API
 -export([]).

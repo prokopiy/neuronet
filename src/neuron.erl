@@ -11,7 +11,7 @@
 
 %% API
 -export([new/0, loop/1]).
-
+%%
 new() ->
   N = [{power, 0}, {in, []}, {out, []}, {num_active_links, 0}],
   spawn(neuron, loop, [N]).

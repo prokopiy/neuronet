@@ -12,7 +12,7 @@
 %% API
 -export([loop/1, gen_neurons/1, generate_perceptron/1]).
 
-
+%%
 
 gen_neurons(0) ->
   [];
