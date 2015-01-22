@@ -48,6 +48,11 @@ pulse_to_neurons_list([H1 | T1], [H2 | T2]) ->
   pulse_to_neurons_list(T1, T2).
 
 
+
+
+
+
+
 loop(N) ->
   receive
     {Pid, stop} ->
