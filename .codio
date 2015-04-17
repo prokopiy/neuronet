@@ -1,7 +1,7 @@
 {
 // Configure your Run and Preview buttons here.
 
-// Run button configuration
+// Run11 button configuration
   "commands": {
         "Node version": "node --version",
         "Compile project": "erlc -I include -o ebin src/*.erl",
