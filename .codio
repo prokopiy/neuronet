@@ -1,11 +1,12 @@
 {
 // Configure your Run and Preview buttons here.
 
-// Run666 button configuration
+// Run button configuration
   "commands": {
         "Node version": "node --version",
         "Компиляция проекта": "erlc -I include -o ebin src/*.erl",
-        "Run main:start()": "erl -pa ~/workspace/ebin -noshell -s main start -s init stop"
+        "Run main:start()": "erl -pa ~/workspace/ebin -noshell -s main start -s init stop",
+        "git commit":      "git commit -a -m 'Следующий релиз'"
   },
 
 // Preview button configuration
