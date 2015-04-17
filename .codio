@@ -1,7 +1,7 @@
 {
 // Configure your Run and Preview buttons here.
 
-// Run button configuration
+// Run666 button configuration
   "commands": {
         "Node version": "node --version",
         "Компиляция проекта": "erlc -I include -o ebin src/*.erl",
