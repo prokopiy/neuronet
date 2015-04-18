@@ -53,7 +53,8 @@ start() ->
 %%   Serv = server:start(),
 %%   io:format("~w~n", [Serv]),
 
-
+  TT = math:tanh(1),
+    
   loop(),
 
   io:get_line("Press <Enter> to exit...")
