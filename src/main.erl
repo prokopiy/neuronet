@@ -36,8 +36,8 @@ loop() ->
 start() ->
   io:format("Node = ~w~n", [node()]),
 
-  N1 = neuron:new(),
-  N2 = neuron:new(),
+  N1 = neuron:new(0),
+  N2 = neuron:new(0),
   link:register_many_to_many([N1], [N2], [1.0]),
 
 

@@ -2,6 +2,8 @@
 %%% @author prokopiy
 %%% @copyright (C) 2014, <COMPANY>
 %%% @doc
+%%% Модуль реализует работу нейрона в нейросети дискретного времени
+%%% Нейрон посылает сигнал на выход сразу после того как получит сигнал со всех входов
 %%%
 %%% @end
 %%% Created : 13. Дек. 2014 21:57
@@ -10,11 +12,19 @@
 -author("prokopiy").
 
 %% API
--export([new/0, loop/1]).
+-export([new/1, loop/1, pulse_to_neurons_list/2, print/1]).
 
-new() ->
-  N = [{power, 0}, {in, []}, {out, []}, {num_active_links, 0}],
+new(Memory_size) ->
+  N = [{power, 0}, {memory_size, Memory_size}, {in_links, []}, {out_links, []}, {num_active_links, 0}],
   spawn(neuron, loop, [N]).
+
+pulse_to_neurons_list([], _) ->
+  true;
+pulse_to_neurons_list([N], [P]) ->
+  N ! {pulse, self(), P};
+pulse_to_neurons_list([H1 | T1], [H2 | T2]) ->
+  H1 ! {pulse, self(), H2},
+  pulse_to_neurons_list(T1, T2).
 
 
 calc_and_pulse_all(PidN, {FromPid, Power}, []) ->
@@ -26,6 +36,8 @@ calc_and_pulse_all(PidN, {PidFrom, Power}, [H | T]) ->
   io:format("Create pulse ~w to ~w~n", [NewP, PidOut]),
   calc_and_pulse_all(PidN, {PidFrom, Power}, T).
 
+print(NeuronPid) ->
+  NeuronPid ! {request, self(), print}.
 
 
 loop(N) ->
@@ -37,22 +49,22 @@ loop(N) ->
       Pid ! {reply, self(), ok},
       loop(N);
     {request, Pid, stop} ->
-      io:format("Neuron~w stop~n", [self()]);
+      io:format("Neuron~w stopped~n", [self()]);
     {request, PidN, {set_link_out, W}} ->
-      {out, Out} = lists:keyfind(out, 1, N),
+      {out_links, Out} = lists:keyfind(out_links, 1, N),
       NewOut = lists:keystore(PidN, 1, Out, {PidN, W}),
-      NewN = lists:keyreplace(out, 1, N, {out, NewOut}),
+      NewN = lists:keyreplace(out_links, 1, N, {out_links, NewOut}),
       loop(NewN);
     {request, PidN, {set_link_in, W}} ->
-      {in, In} = lists:keyfind(in, 1, N),
+      {in_links, In} = lists:keyfind(in_links, 1, N),
       NewIn = lists:keystore(PidN, 1, In, {PidN, W}),
-      NewN = lists:keyreplace(in, 1, N, {in, NewIn}),
+      NewN = lists:keyreplace(in_links, 1, N, {in_links, NewIn}),
       loop(NewN);
     {request, Pid, {pulse, From, Power}} ->
       Pid ! {reply, self(), ok},
       {power, P} = lists:keyfind(power, 1, N),
       NewP = P + Power,
-      {in, In} = lists:keyfind(in, 1, N),
+      {in_links, In} = lists:keyfind(in_links, 1, N),
       L = length(In),
       {num_active_links, A} = lists:keyfind(num_active_links, 1, N),
       NewA = A + 1,
@@ -63,11 +75,11 @@ loop(N) ->
           loop(NewN2);
         NewA >= L ->
           S = math:tanh(NewP),
-          {out, Out} = lists:keyfind(out, 1, N),
+          {out_links, Out} = lists:keyfind(out_links, 1, N),
           if
             Out == [] ->
-              io:format("Neuron~w: send ~w to ~w~n", [self(), S, From]),
-              From ! {request, self(), {effect, S}};
+              io:format("Neuron~w: send effect ~w to ~w~n", [self(), NewP, From]),
+              From ! {request, self(), {effect, NewP}};
             Out /= [] ->
               true
           end,
