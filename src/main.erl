@@ -12,14 +12,7 @@
 %% API
 -export([start/0]).
 
-%%
-call(Pid, Message) ->
-  Pid ! {request, self(), Message},
-  receive
-    {reply, Pid, Reply} -> Reply;
-    {reply, OtherPid, Reply} ->
-      io:format("Other ~w reply = ~w~n", [OtherPid, Reply])
-  end.
+
 
 
 loop() ->
@@ -29,7 +22,7 @@ loop() ->
       loop()
 
   after
-    21000 ->
+    1000 ->
       true
   end.
 
@@ -37,15 +30,35 @@ start() ->
   io:format("Node = ~w~n", [node()]),
 
   N1 = neuron:new(0),
-  N2 = neuron:new(0),
-  link:register_many_to_many([N1], [N2], [1.0]),
+  N2 = neuron:new(1),
+  N3 = neuron:new(2),
+  link:register_neuron_to_neuron(N1, N3, 0.5),
+  link:register_neuron_to_neuron(N2, N3, 1.0),
+
+  N1 ! {request, self(), {pulse, self(), 0.66}},
+  N2 ! {request, self(), {pulse, self(), 0.88}},
+
+  N1 ! {request, self(), {pulse, self(), 0.11}},
+  N2 ! {request, self(), {pulse, self(), 0.22}},
+
+  N1 ! {request, self(), {pulse, self(), 0.44}},
+  N2 ! {request, self(), {pulse, self(), 0.55}},
 
 
-  R1 = call(N1, print),
+  R1 = neuron:call(N1, neuron:print_message()),
   io:format("Reply ~w~n", [R1]),
 
-  R2 = call(N1, {pulse, self(), 1.0}),
+  R2 = neuron:call(N2, neuron:print_message()),
   io:format("Reply ~w~n", [R2]),
+
+%%   R3 = neuron:call(N3, neuron:print_message()),
+%%   io:format("Reply ~w~n", [R3]),
+
+  loop(),
+  R3 = neuron:call(N3, neuron:print_message()),
+  io:format("Reply ~w~n", [R3]),
+%%   R2 = call(N1, {pulse, self(), 1.0}),
+%%   io:format("Reply ~w~n", [R2]),
 
 %%   erlang:set_cookie(node(), pass),
 %%   net_adm:ping('bar@Prokopiy-PC'),
@@ -53,10 +66,10 @@ start() ->
 %%   Serv = server:start(),
 %%   io:format("~w~n", [Serv]),
 
-  TT = math:tanh(1),
-    
-  loop(),
+%%   TT = math:tanh(1),
+%%
+%%   loop(),
 
-  io:get_line("Press <Enter> to exit...")
+  io:get_line("Press <Enter> to exit...").
 
-.
+
