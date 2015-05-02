@@ -10,25 +10,71 @@
 -author("prokopiy").
 
 %% API
--export([loop/1, gen_neurons/1, new/0]).
+-export([loop/1, new/2, generate_layer/1, test/0]).
 
-%%
 
-gen_neurons(0) ->
-  [];
-gen_neurons(N) ->
-  [neuron:new()] ++ gen_neurons(N - 1).
+new(Layers, Memory_length) ->
 
-new() ->
-  N = [{neurons, []}, {receptors, []}, {effectors, []}],
+  Receptors_size = lists:nth(1, Layers),
+  L1 = generate_layer(generate_list_of(0, Receptors_size, [])),
+
+  Effectors_size = lists:last(Layers),
+  L3 = generate_layer(generate_list_of(0, Effectors_size, [])),
+
+  Hidden_layers = lists:sublist(Layers, 2, length(Layers) - 2),
+  L2 = generate_hidden_layers(Hidden_layers),
+
+
+  N = [{hidden_layers, L2}, {receptors, L1}, {effectors, L3}, {memory, []}],
   spawn(net, loop, [N]).
 
 
+test() ->
 
-loop(N) ->
+  Net1 = new([3, 2, 2, 1], 5),
+  Net1 ! {request, self(), print_message()},
+
+  true.
+
+
+print_message() ->
+  print.
+
+
+generate_list_of(V, Length) ->
+  generate_list_of(V, Length, []).
+generate_list_of(V, 0, Acc) ->
+  Acc;
+generate_list_of(V, Length, Acc) ->
+  generate_list_of(V, Length - 1, [V] ++ Acc).
+
+generate_layer(A) ->
+  generate_layer(A, []).
+generate_layer([], Acc) ->
+  Acc;
+generate_layer([H | T], Acc) ->
+  N = neuron:new(H),
+  generate_layer(T, Acc ++ [N]).
+
+
+generate_hidden_layers(L) ->
+  generate_hidden_layers(L, []).
+generate_hidden_layers([], Acc) ->
+  Acc;
+generate_hidden_layers([H | T], Acc) ->
+  L = generate_layer(generate_list_of(0, H)),
+  generate_hidden_layers(T, Acc ++ [L]).
+
+
+
+loop(Data) ->
   receive
     {reply, _, ok} ->
-      loop(N)
+      loop(Data);
+    {request, Pid, print} ->
+      io:format("Net~w ~w~n", [self(), Data]),
+      Pid ! {reply, self(), ok},
+      loop(Data)
   after
     25000 ->
       true

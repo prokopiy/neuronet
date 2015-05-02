@@ -29,47 +29,32 @@ loop() ->
 start() ->
   io:format("Node = ~w~n", [node()]),
 
-  N1 = neuron:new(0),
-  N2 = neuron:new(1),
-  N3 = neuron:new(2),
-  link:register_neuron_to_neuron(N1, N3, 0.5),
-  link:register_neuron_to_neuron(N2, N3, 1.0),
-
-  N1 ! {request, self(), {pulse, self(), 0.66}},
-  N2 ! {request, self(), {pulse, self(), 0.88}},
-
-  N1 ! {request, self(), {pulse, self(), 0.11}},
-  N2 ! {request, self(), {pulse, self(), 0.22}},
-
-  N1 ! {request, self(), {pulse, self(), 0.44}},
-  N2 ! {request, self(), {pulse, self(), 0.55}},
-
-
-  R1 = neuron:call(N1, neuron:print_message()),
-  io:format("Reply ~w~n", [R1]),
-
-  R2 = neuron:call(N2, neuron:print_message()),
-  io:format("Reply ~w~n", [R2]),
-
+%%   N1 = neuron:new(0),
+%%   N2 = neuron:new(1),
+%%   N3 = neuron:new(2),
+%%   link:register_neuron_to_neuron(N1, N3, 0.5),
+%%   link:register_neuron_to_neuron(N2, N3, 1.0),
+%%
+%%   N1 ! {request, self(), {pulse, self(), 0.66}},
+%%   N2 ! {request, self(), {pulse, self(), 0.88}},
+%%   N1 ! {request, self(), {pulse, self(), 0.11}},
+%%   N2 ! {request, self(), {pulse, self(), 0.22}},
+%%   N1 ! {request, self(), {pulse, self(), 0.44}},
+%%   N2 ! {request, self(), {pulse, self(), 0.55}},
+%%
+%%   R1 = neuron:call(N1, neuron:print_message()),
+%%   io:format("Reply ~w~n", [R1]),
+%%   R2 = neuron:call(N2, neuron:print_message()),
+%%   io:format("Reply ~w~n", [R2]),
 %%   R3 = neuron:call(N3, neuron:print_message()),
 %%   io:format("Reply ~w~n", [R3]),
 
+%%   L = net:generate_layer([0,1,2,3]),
+%%   io:format("Layer = ~w~n", [L]),
+
+  net:test(),
+
   loop(),
-  R3 = neuron:call(N3, neuron:print_message()),
-  io:format("Reply ~w~n", [R3]),
-%%   R2 = call(N1, {pulse, self(), 1.0}),
-%%   io:format("Reply ~w~n", [R2]),
-
-%%   erlang:set_cookie(node(), pass),
-%%   net_adm:ping('bar@Prokopiy-PC'),
-
-%%   Serv = server:start(),
-%%   io:format("~w~n", [Serv]),
-
-%%   TT = math:tanh(1),
-%%
-%%   loop(),
-
   io:get_line("Press <Enter> to exit...").
 
 
