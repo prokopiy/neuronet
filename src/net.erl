@@ -40,6 +40,9 @@ test() ->
 print_message() ->
   print.
 
+stop_message() ->
+  stop.
+
 
 generate_list_of(V, Length) ->
   generate_list_of(V, Length, []).
@@ -74,7 +77,11 @@ loop(Data) ->
     {request, Pid, print} ->
       io:format("Net~w ~w~n", [self(), Data]),
       Pid ! {reply, self(), ok},
-      loop(Data)
+      loop(Data);
+    {request, Pid, {pulse, From, PowerList}} ->
+      {receptors, FL} = lists:keyfind(receptors, 1, Data),
+      lists:foreach(fun(P) -> P ! {self(), stop} end, FL)
+
   after
     25000 ->
       true

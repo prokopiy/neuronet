@@ -13,13 +13,8 @@
 -author("prokopiy").
 
 %% API
--export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3]).
+-export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3, new/0]).
 
-%% fun_1() ->
-%%   1.
-%%
-%% fun2()->
-%%   math:tanh/1.
 
 new() ->
   new(0).
@@ -28,12 +23,10 @@ new(Memory_size) ->
   Data = [
     {in_powers, []},
     {memory, gen_clean_memory(Memory_size)},
-%%     {memory_size, Memory_size},
     {in_links, []},
     {out_links, []},
     {error, 0},
     {num_active_links, 0}
-%%     [func, math:tanh/1]
   ],
   spawn(neuron, loop, [Data]).
 
