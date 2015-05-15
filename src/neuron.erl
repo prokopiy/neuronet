@@ -12,7 +12,7 @@
 -module(neuron).
 -author("prokopiy").
 
-%% API
+%% API jjjj
 -export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3, new/0]).
 
 
