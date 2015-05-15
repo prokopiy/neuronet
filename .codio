@@ -6,7 +6,7 @@
         "Node version": "node --version",
         "Компиляция проекта": "erlc -I include -o ebin src/*.erl",
         "Run main:start()": "erl -pa ~/workspace/ebin -noshell -s main start -s init stop",
-        "git commit":      "git commit -a -m 'Следующий релиз'"
+        "Git commit":      "git commit -a -m 'Выгрузка из Codio'"
   },
 
 // Preview button configuration
