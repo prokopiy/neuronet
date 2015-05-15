@@ -29,9 +29,9 @@ loop() ->
 start() ->
   io:format("Node = ~w~n", [node()]),
 
-%%  N1 = neuron:new(0),
-%%  N2 = neuron:new(1),
-%%   N3 = neuron:new(2),
+  N1 = neuron:new(0),
+  N2 = neuron:new(1),
+  N3 = neuron:new(2),
 %%   link:register_neuron_to_neuron(N1, N3, 0.5),
 %%   link:register_neuron_to_neuron(N2, N3, 1.0),
 %%
