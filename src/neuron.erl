@@ -20,14 +20,22 @@ new() ->
   new(0).
 
 new(Memory_size) ->
-  Data = [
-    {in_powers, []},
-    {memory, gen_clean_memory(Memory_size)},
-    {in_links, []},
-    {out_links, []},
-    {error, 0},
-    {num_active_links, 0}
-  ],
+  Data = #{
+           in_powers => [],
+           memory => gen_clean_memory(Memory_size),
+           in_links => [],
+           out_links => [],
+           error => 0,
+           num_active_links => 0
+          },
+%   Data = [
+%     {in_powers, []},
+%     {memory, gen_clean_memory(Memory_size)},
+%     {in_links, []},
+%     {out_links, []},
+%     {error, 0},
+%     {num_active_links, 0}
+%   ],
   spawn(neuron, loop, [Data]).
 
 call(Pid, Message) ->
@@ -63,15 +71,19 @@ loop(Data) ->
       io:format("Neuron~w stopped~n", [self()]),
       Pid ! {reply, self(), ok};
     {request, Pid, {set_link_out, Output_neuron_Pid, W}} ->
-      {out_links, Current_out_links} = lists:keyfind(out_links, 1, Data),
+      Current_out_links = maps:get(out_links, Data),
+%       {out_links, Current_out_links} = lists:keyfind(out_links, 1, Data),
       New_out_links = lists:keystore(Output_neuron_Pid, 1, Current_out_links, {Output_neuron_Pid, W}),
-      NewData = lists:keyreplace(out_links, 1, Data, {out_links, New_out_links}),
+      NewData = maps:put(out_links, New_out_links, Data),
+%       NewData = lists:keyreplace(out_links, 1, Data, {out_links, New_out_links}),
       Pid ! {reply, self(), ok},
       loop(NewData);
     {request, Pid, {set_link_in, Input_neuron_pid, W}} ->
-      {in_links, Current_in_links} = lists:keyfind(in_links, 1, Data),
+      Current_in_links = maps:get(in_links, Data),
+%       {in_links, Current_in_links} = lists:keyfind(in_links, 1, Data),
       New_in_links = lists:keystore(Input_neuron_pid, 1, Current_in_links, {Input_neuron_pid, W}),
-      NewData = lists:keyreplace(in_links, 1, Data, {in_links, New_in_links}),
+      NewData = maps:put(in_links, New_in_links, Data),      
+%       NewData = lists:keyreplace(in_links, 1, Data, {in_links, New_in_links}),
       Pid ! {reply, self(), ok},
       loop(NewData);
     {request, Pid, {pulse, From, Power}} ->

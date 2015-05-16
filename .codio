@@ -9,6 +9,13 @@
         "Git commit":      "git commit -am 'Синхронизация с остальными'"
   },
 
+  "buildandrun": {
+        "Node version": "node --version",
+        "Компиляция проекта": "erlc -I include -o ebin src/*.erl",
+        "Run main:start()": "erl -pa ~/workspace/ebin -noshell -s main start -s init stop",
+        "Git commit":      "git commit -am 'Синхронизация с остальными'"
+  },
+
 // Preview button configuration
   "preview": {
         "Project Index (static)": "https://{{domain}}/{{index}}",
