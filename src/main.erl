@@ -57,7 +57,7 @@ start() ->
 %%   L = net:generate_layer([0,1,2,3]),
 %%   io:format("Layer = ~w~n", [L]),
 
-%   net:test(),
+  net:test(),
 
   loop(),
   io:get_line("Press <Enter> to exit...").
