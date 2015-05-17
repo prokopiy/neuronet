@@ -18,7 +18,7 @@
 loop() ->
   receive
     A ->
-      io:format("loop: ~w ~n", [A]),
+      io:format("main:loop(): ~w ~n", [A]),
       loop()
 
   after
@@ -29,21 +29,23 @@ loop() ->
 start() ->
   io:format("Node = ~w~n", [node()]),
 
+  io:format("math:tanh(0.28918170652225295) = ~w~n", [math:tanh(0.28918170652225295)]),
+
   N1 = neuron:new(0),
   N2 = neuron:new(1),
   N3 = neuron:new(2),
   link:register_neuron_to_neuron(N1, N3, 0.5),
   link:register_neuron_to_neuron(N2, N3, 1.0),
-  
-  neuron:print(N1),
+
+%%   neuron:print([N1, N2, N3]),
   
 %%
-%%   N1 ! {request, self(), {pulse, self(), 0.66}},
-%%   N2 ! {request, self(), {pulse, self(), 0.88}},
-%%   N1 ! {request, self(), {pulse, self(), 0.11}},
-%%   N2 ! {request, self(), {pulse, self(), 0.22}},
-%%   N1 ! {request, self(), {pulse, self(), 0.44}},
-%%   N2 ! {request, self(), {pulse, self(), 0.55}},
+  N1 ! {request, self(), {pulse, self(), 0.66}},
+  N2 ! {request, self(), {pulse, self(), 0.88}},
+  N1 ! {request, self(), {pulse, self(), 0.11}},
+  N2 ! {request, self(), {pulse, self(), 0.22}},
+  N1 ! {request, self(), {pulse, self(), 0.44}},
+  N2 ! {request, self(), {pulse, self(), 0.55}},
 %%
 %   R1 = neuron:call(N1, neuron:print_message()),
 %   io:format("Reply ~w~n", [R1]),

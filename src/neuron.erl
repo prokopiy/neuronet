@@ -14,7 +14,7 @@
 -author("prokopiy").
 
 %% API jjjj
--export([new/0, new/1, register_link/3]).
+-export([new/0, new/1, loop/1, register_link/3, print/1, stop/1]).
 % -export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3, new/0]).
 
 
@@ -23,7 +23,7 @@ new() ->
 
 new(Memory_size) ->
   Data = #{
-           in_powers => [],
+    in_powers => #{},
            memory => gen_clean_memory(Memory_size),
            in_links => #{},
            out_links => #{},
@@ -37,26 +37,26 @@ call(Pid, Message) ->
   Pid ! {request, self(), Message},
   receive
     {reply, Pid, Reply} -> Reply
-%%     {reply, OtherPid, Reply} ->
-%%       io:format("Other ~w reply = ~w~n", [OtherPid, Reply])
   end.
 
 
-% print_message() ->
-%   print.
+print(Neuron_pid) when is_pid(Neuron_pid) ->
+  call(Neuron_pid, print);
+print([Neuron_pid]) ->
+  call(Neuron_pid, print);
+print([H | T]) ->
+  print(H),
+  print(T).
 
-% stop_message() ->
-%   stop.
+stop(Neuron_pid) ->
+  call(Neuron_pid, stop).
 
-% set_link_out_message(Output_neuron_Pid, Link_weight) ->
-%   {set_link_out, Output_neuron_Pid, Link_weight}.
+register_link(Pid_neuron_from, Pid_neuron_to, W) ->
+  Pid_neuron_from ! {request, self(), {set_link_out, Pid_neuron_to, W}},
+  Pid_neuron_to ! {request, self(), {set_link_in, Pid_neuron_from, W}},
+  true.
 
-% set_link_in_message(Input_neuron_Pid, Link_weight) ->
-%   {set_link_in, Input_neuron_Pid, Link_weight}.
 
-print(Neuron_pid) ->
-  call(Neuron_pid, print).
-  
 
 
 loop(Data) ->
@@ -83,42 +83,44 @@ loop(Data) ->
       Pid ! {reply, self(), ok},
       loop(NewData);
     {request, Pid, {pulse, From, Power}} ->
-      {in_powers, Current_in_powers} = lists:keyfind(in_powers, 1, Data),
-      New_in_powers = lists:keystore(Pid, 1, Current_in_powers, {Pid, Power}),
-      New_in_powers_length = length(New_in_powers),
-      {in_links, Current_in_links} = lists:keyfind(in_links, 1, Data),
-      Current_in_links_length = length(Current_in_links),
-%%       io:format("~w: Current_in_links_length=~w~n", [self(), Current_in_links_length]),
-%%       io:format("~w: New_in_powers_length=~w~n", [self(), New_in_powers_length]),
+      Current_in_powers = maps:get(in_powers, Data),
+      New_in_powers = maps:put(Pid, Power, Current_in_powers),
+      New_in_powers_length = maps:size(New_in_powers),
+      Current_in_links = maps:get(in_links, Data),
+      Current_in_links_length = maps:size(Current_in_links),
+%%        io:format("~w: Current_in_links_length=~w~n", [self(), Current_in_links_length]),
+%%        io:format("~w: New_in_powers=~w~n", [self(), New_in_powers]),
 
       if
         New_in_powers_length < Current_in_links_length ->
-          NewData = lists:keyreplace(in_powers, 1, Data, {in_powers, New_in_powers}),
+          NewData = Data#{in_powers := New_in_powers},
           Pid ! {reply, self(), ok},
           loop(NewData);
         New_in_powers_length >= Current_in_links_length ->
-          Sum_in_powers = lists:foldl(fun({_, Poweri}, Acc) -> Acc + Poweri end, 0, New_in_powers),
-%%           io:format("~w: Sum_in_powers=~w~n", [self(), Sum_in_powers]),
+          Fun = fun(_, V, Acc) -> Acc + V end,
+          Sum_in_powers = maps:fold(Fun, 0, New_in_powers),
+%%            io:format("~w: Sum_in_powers=~w~n", [self(), Sum_in_powers]),
 
-          {memory, Current_memory} = lists:keyfind(memory, 1, Data),
+          Current_memory = maps:get(memory, Data),
 %%           io:format("~w: Current_memory=~w~n", [self(), Current_memory]),
-%%           {memory, Current_F} = lists:keyfind(func, 1, Data),
           New_memory1 = Current_memory ++ [math:tanh(Sum_in_powers)],
           [Last_power | New_memory] = New_memory1,
 
 
-          {out_links, Out} = lists:keyfind(out_links, 1, Data),
-          if
-            Out == [] ->
+%%           {out_links, Out} = lists:keyfind(out_links, 1, Data),
+          Out = maps:get(out_links, Data),
+%%           io:format("~w: Out=~w~n", [self(), Out]),
+          case maps:size(Out) of
+            0 ->
               io:format("Neuron~w: send effect ~w to ~w~n", [self(), Last_power, From]),
               From ! {reply, self(), {effect, Last_power}};
-            Out /= [] ->
+            _Other ->
               true
           end,
           calc_and_pulse_all(self(), {From, Last_power}, Out),
 
-          NewData1 = lists:keyreplace(in_powers, 1, Data, {in_powers, []}),
-          NewData2 = lists:keyreplace(memory, 1, NewData1, {memory, New_memory}),
+          NewData1 = Data#{in_powers := #{}},
+          NewData2 = NewData1#{memory := New_memory},
           Pid ! {reply, self(), ok},
           loop(NewData2)
       end
@@ -133,21 +135,16 @@ loop(Data) ->
   end.
 
 
-register_link(Pid_neuron_from, Pid_neuron_to, W) ->
-  Pid_neuron_from ! {request, self(), {set_link_out, Pid_neuron_to, W}},
-  Pid_neuron_to ! {request, self(), {set_link_in, Pid_neuron_from, W}},
-  true.
 
 gen_clean_memory(0) ->
   [];
 gen_clean_memory(Length) ->
   [0] ++ gen_clean_memory(Length - 1).
 
-calc_and_pulse_all(_, {_, _}, []) ->
-  true;
-calc_and_pulse_all(PidN, {PidFrom, Power}, [H | T]) ->
-  {PidOut, W} = H,
-  NewP = Power * W,
-  PidOut ! {request, PidN, {pulse, PidFrom, NewP}},
-  io:format("~w: Create pulse ~w to ~w~n", [self(), NewP, PidOut]),
-  calc_and_pulse_all(PidN, {PidFrom, Power}, T).
+calc_and_pulse_all(PidN, {PidFrom, Power}, Map) ->
+  Fun = fun(K, W, Acc) when is_pid(K) ->
+    K ! {request, PidN, {pulse, PidFrom, Power * W}},
+    io:format("~w: Create pulse ~w to ~w~n", [self(), Power * W, K]),
+    Acc + W
+  end,
+  maps:fold(Fun, 0, Map).
