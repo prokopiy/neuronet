@@ -9,6 +9,7 @@
 %%% @end
 %%% Created : 13. Дек. 2014 21:57
 %%%-------------------------------------------------------------------
+
 -module(neuron).
 -author("prokopiy").
 
@@ -74,8 +75,8 @@ loop(Data) ->
       Current_out_links = maps:get(out_links, Data),
 %       {out_links, Current_out_links} = lists:keyfind(out_links, 1, Data),
 %       New_out_links = lists:keystore(Output_neuron_Pid, 1, Current_out_links, {Output_neuron_Pid, W}),
-      New_out_links = Current_out_links#{Output_neuron_pid := W},
-%       New_out_links = maps:put(Output_neuron_pid, W, Current_out_links),
+%%       New_out_links = Current_out_links#{Output_neuron_pid := W},
+      New_out_links = maps:put(Output_neuron_pid, W, Current_out_links),
 %       NewData = maps:put(out_links, New_out_links, Data),
       NewData = Data#{out_links := New_out_links},
 %       NewData = lists:keyreplace(out_links, 1, Data, {out_links, New_out_links}),
@@ -85,8 +86,8 @@ loop(Data) ->
       Current_in_links = maps:get(in_links, Data),
 %       {in_links, Current_in_links} = lists:keyfind(in_links, 1, Data),
 %       New_in_links = lists:keystore(Input_neuron_pid, 1, Current_in_links, {Input_neuron_pid, W}),
-      New_in_links = Current_in_links#{Input_neuron_pid := W},
-%       New_in_links = maps:put(Input_neuron_pid, W, Current_in_links),
+%%       New_in_links = Current_in_links#{Input_neuron_pid := W},
+      New_in_links = maps:put(Input_neuron_pid, W, Current_in_links),
 %       NewData = maps:put(in_links, New_in_links, Data),      
       NewData = Data#{in_links := New_in_links},
 %       NewData = lists:keyreplace(in_links, 1, Data, {in_links, New_in_links}),
