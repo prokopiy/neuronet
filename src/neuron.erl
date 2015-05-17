@@ -14,7 +14,8 @@
 -author("prokopiy").
 
 %% API jjjj
--export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3, new/0]).
+-export([new/0, new/1, register_link/3]).
+% -export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3, new/0]).
 
 
 new() ->
@@ -29,15 +30,8 @@ new(Memory_size) ->
            error => 0,
            num_active_links => 0
           },
-%   Data = [
-%     {in_powers, []},
-%     {memory, gen_clean_memory(Memory_size)},
-%     {in_links, []},
-%     {out_links, []},
-%     {error, 0},
-%     {num_active_links, 0}
-%   ],
   spawn(neuron, loop, [Data]).
+
 
 call(Pid, Message) ->
   Pid ! {request, self(), Message},
@@ -48,17 +42,22 @@ call(Pid, Message) ->
   end.
 
 
-print_message() ->
-  print.
+% print_message() ->
+%   print.
 
-stop_message() ->
-  stop.
+% stop_message() ->
+%   stop.
 
-set_link_out_message(Output_neuron_Pid, Link_weight) ->
-  {set_link_out, Output_neuron_Pid, Link_weight}.
+% set_link_out_message(Output_neuron_Pid, Link_weight) ->
+%   {set_link_out, Output_neuron_Pid, Link_weight}.
 
-set_link_in_message(Input_neuron_Pid, Link_weight) ->
-  {set_link_in, Input_neuron_Pid, Link_weight}.
+% set_link_in_message(Input_neuron_Pid, Link_weight) ->
+%   {set_link_in, Input_neuron_Pid, Link_weight}.
+
+print(Neuron_pid) ->
+  call(Neuron_pid, print).
+  
+
 
 loop(Data) ->
   receive
