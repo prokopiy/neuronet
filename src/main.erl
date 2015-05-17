@@ -37,16 +37,13 @@ start() ->
   link:register_neuron_to_neuron(N1, N3, 0.5),
   link:register_neuron_to_neuron(N2, N3, 1.0),
 
-%%   neuron:print([N1, N2, N3]),
-  
-%%
-  N1 ! {request, self(), {pulse, self(), 0.66}},
-  N2 ! {request, self(), {pulse, self(), 0.88}},
-  N1 ! {request, self(), {pulse, self(), 0.11}},
-  N2 ! {request, self(), {pulse, self(), 0.22}},
-  N1 ! {request, self(), {pulse, self(), 0.44}},
-  N2 ! {request, self(), {pulse, self(), 0.55}},
-%%
+  neuron:pulse(N1, 0.66),
+  neuron:pulse(N2, 0.88),
+  neuron:pulse(N1, 0.11),
+  neuron:pulse(N2, 0.22),
+  neuron:pulse(N1, 0.44),
+  neuron:pulse(N2, 0.55),
+
 %   R1 = neuron:call(N1, neuron:print_message()),
 %   io:format("Reply ~w~n", [R1]),
 %   R2 = neuron:call(N2, neuron:print_message()),
@@ -61,5 +58,3 @@ start() ->
 
   loop(),
   io:get_line("Press <Enter> to exit...").
-
-

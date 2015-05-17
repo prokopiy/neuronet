@@ -14,7 +14,7 @@
 -author("prokopiy").
 
 %% API jjjj
--export([new/0, new/1, loop/1, register_link/3, print/1, stop/1]).
+-export([new/0, new/1, loop/1, register_link/3, print/1, stop/1, pulse/2]).
 % -export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3, new/0]).
 
 
@@ -56,7 +56,8 @@ register_link(Pid_neuron_from, Pid_neuron_to, W) ->
   Pid_neuron_to ! {request, self(), {set_link_in, Pid_neuron_from, W}},
   true.
 
-
+pulse(Neuron_pid, Value) when is_pid(Neuron_pid) ->
+  Neuron_pid ! {request, self(), {pulse, self(), Value}}.
 
 
 loop(Data) ->
@@ -145,6 +146,6 @@ calc_and_pulse_all(PidN, {PidFrom, Power}, Map) ->
   Fun = fun(K, W, Acc) when is_pid(K) ->
     K ! {request, PidN, {pulse, PidFrom, Power * W}},
     io:format("~w: Create pulse ~w to ~w~n", [self(), Power * W, K]),
-    Acc + W
+    Acc
   end,
   maps:fold(Fun, 0, Map).
