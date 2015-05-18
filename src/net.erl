@@ -24,9 +24,7 @@ new(Layers, Memory_length) ->
   Hidden_layers = lists:sublist(Layers, 2, length(Layers) - 2),
   L2 = generate_hidden_layers(Hidden_layers),
 
-  io:format("L1 = ~w~n", [L1]),
-  io:format("L2 = ~w~n", [L2]),
-  io:format("L3 = ~w~n", [L3]),
+  lists:foreach(fun(P) -> neuron:register_link(P, L3, 1) end, L1),
 
   Data = #{
     hidden_layers => L2,
@@ -38,7 +36,7 @@ new(Layers, Memory_length) ->
 
 
 test() ->
-  Net1 = new([3, 2, 2, 1], 5),
+  Net1 = new([3, 2, 3, 1], 5),
   print(Net1),
   true.
 
@@ -77,7 +75,9 @@ loop(Data) ->
       loop(Data);
     {request, Pid, print} ->
       io:format("Net~w ~w~n", [self(), Data]),
-      Pid ! {reply, self(), ok},
+      neuron:print(maps:get(receptors, Data)),
+      neuron:print(maps:get(effectors, Data)),
+%%       Pid ! {reply, self(), ok},
       loop(Data);
     {request, Pid, {pulse, From, PowerList}} ->
        {receptors, FL} = lists:keyfind(receptors, 1, Data),

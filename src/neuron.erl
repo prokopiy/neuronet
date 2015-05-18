@@ -14,7 +14,7 @@
 -author("prokopiy").
 
 %% API jjjj
--export([new/0, new/1, loop/1, register_link/3, print/1, stop/1, pulse/2]).
+-export([new/0, new/1, loop/1, register_link/3, print/1, stop/1, pulse/2, print/1]).
 % -export([new/1, loop/1, call/2, print_message/0, stop_message/0, set_link_out_message/2, set_link_in_message/2, register_link/3, new/0]).
 
 
@@ -41,9 +41,9 @@ call(Pid, Message) ->
 
 
 print(Neuron_pid) when is_pid(Neuron_pid) ->
-  call(Neuron_pid, print);
+  Neuron_pid ! {request, self(), print};
 print([Neuron_pid]) ->
-  call(Neuron_pid, print);
+  Neuron_pid ! {request, self(), print};
 print([H | T]) ->
   print(H),
   print(T).
@@ -51,10 +51,14 @@ print([H | T]) ->
 stop(Neuron_pid) ->
   call(Neuron_pid, stop).
 
-register_link(Pid_neuron_from, Pid_neuron_to, W) ->
+
+register_link(Pid_neuron_from, Pid_neuron_to, W) when is_pid(Pid_neuron_from), is_pid(Pid_neuron_to), is_number(W) ->
   Pid_neuron_from ! {request, self(), {set_link_out, Pid_neuron_to, W}},
   Pid_neuron_to ! {request, self(), {set_link_in, Pid_neuron_from, W}},
-  true.
+  true;
+register_link(Pid_neuron_from, List_neurons_to, W) when is_pid(Pid_neuron_from), is_list(List_neurons_to), is_number(W) ->
+  lists:foreach(fun(P) -> register_link(Pid_neuron_from, P, W) end, List_neurons_to).
+
 
 pulse(Neuron_pid, Value) when is_pid(Neuron_pid) ->
   Neuron_pid ! {request, self(), {pulse, self(), Value}}.
@@ -66,22 +70,22 @@ loop(Data) ->
       loop(Data);
     {request, Pid, print} ->
       io:format("Neuron~w ~w~n", [self(), Data]),
-      Pid ! {reply, self(), ok},
+%%       Pid ! {reply, self(), ok},
       loop(Data);
     {request, Pid, stop} ->
-      io:format("Neuron~w stopped~n", [self()]),
-      Pid ! {reply, self(), ok};
+      io:format("Neuron~w stopped~n", [self()]);
+%%       Pid ! {reply, self(), ok};
     {request, Pid, {set_link_out, Output_neuron_pid, W}} ->
       Current_out_links = maps:get(out_links, Data),
       New_out_links = maps:put(Output_neuron_pid, W, Current_out_links),
       NewData = Data#{out_links := New_out_links},
-      Pid ! {reply, self(), ok},
+%%       Pid ! {reply, self(), ok},
       loop(NewData);
     {request, Pid, {set_link_in, Input_neuron_pid, W}} ->
       Current_in_links = maps:get(in_links, Data),
       New_in_links = maps:put(Input_neuron_pid, W, Current_in_links),
       NewData = Data#{in_links := New_in_links},
-      Pid ! {reply, self(), ok},
+%%       Pid ! {reply, self(), ok},
       loop(NewData);
     {request, Pid, {pulse, From, Power}} ->
       Current_in_powers = maps:get(in_powers, Data),
