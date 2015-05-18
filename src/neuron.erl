@@ -24,12 +24,12 @@ new() ->
 new(Memory_size) ->
   Data = #{
     in_powers => #{},
-           memory => gen_clean_memory(Memory_size),
-           in_links => #{},
-           out_links => #{},
-           error => 0,
-           num_active_links => 0
-          },
+    memory => gen_clean_memory(Memory_size),
+    in_links => #{},
+    out_links => #{},
+    error => 0,
+    num_active_links => 0
+  },
   spawn(neuron, loop, [Data]).
 
 

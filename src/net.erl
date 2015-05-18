@@ -10,46 +10,46 @@
 -author("prokopiy").
 
 %% API
--export([loop/1, new/2, generate_layer/1, test/0]).
+-export([loop/1, new/2, generate_layer/1, test/0, print/1, stop/1]).
 
 
 new(Layers, Memory_length) ->
 
   Receptors_size = lists:nth(1, Layers),
-  L1 = generate_layer(generate_list_of(0, Receptors_size, [])),
+  L1 = generate_layer(lists:duplicate(Receptors_size, 0)),
 
   Effectors_size = lists:last(Layers),
-  L3 = generate_layer(generate_list_of(0, Effectors_size, [])),
+  L3 = generate_layer(lists:duplicate(Effectors_size, 0)),
 
   Hidden_layers = lists:sublist(Layers, 2, length(Layers) - 2),
   L2 = generate_hidden_layers(Hidden_layers),
 
+  io:format("L1 = ~w~n", [L1]),
+  io:format("L2 = ~w~n", [L2]),
+  io:format("L3 = ~w~n", [L3]),
 
-  N = [{hidden_layers, L2}, {receptors, L1}, {effectors, L3}, {memory, []}],
-  spawn(net, loop, [N]).
+  Data = #{
+    hidden_layers => L2,
+    receptors => L1,
+    effectors => L3,
+    memory => []
+  },
+  spawn(net, loop, [Data]).
 
 
 test() ->
-
   Net1 = new([3, 2, 2, 1], 5),
-  Net1 ! {request, self(), print_message()},
-
+  print(Net1),
   true.
 
 
-print_message() ->
-  print.
+print(Net) when is_pid(Net) ->
+  Net ! {request, self(), print}.
 
-stop_message() ->
-  stop.
+stop(Net) when is_pid(Net) ->
+  Net ! {request, self(), stop}.
 
 
-generate_list_of(V, Length) ->
-  generate_list_of(V, Length, []).
-generate_list_of(V, 0, Acc) ->
-  Acc;
-generate_list_of(V, Length, Acc) ->
-  generate_list_of(V, Length - 1, [V] ++ Acc).
 
 generate_layer(A) ->
   generate_layer(A, []).
@@ -60,12 +60,13 @@ generate_layer([H | T], Acc) ->
   generate_layer(T, Acc ++ [N]).
 
 
+
 generate_hidden_layers(L) ->
   generate_hidden_layers(L, []).
 generate_hidden_layers([], Acc) ->
   Acc;
 generate_hidden_layers([H | T], Acc) ->
-  L = generate_layer(generate_list_of(0, H)),
+  L = generate_layer(lists:duplicate(H, 0)),
   generate_hidden_layers(T, Acc ++ [L]).
 
 
@@ -79,64 +80,11 @@ loop(Data) ->
       Pid ! {reply, self(), ok},
       loop(Data);
     {request, Pid, {pulse, From, PowerList}} ->
-      {receptors, FL} = lists:keyfind(receptors, 1, Data),
-      lists:foreach(fun(P) -> P ! {self(), stop} end, FL)
+       {receptors, FL} = lists:keyfind(receptors, 1, Data),
+       lists:foreach(fun(P) -> P ! {self(), stop} end, FL)
 
   after
     25000 ->
       true
   end.
 
-
-%% generate_perceptron_data([N1, N2]) ->
-%%   L1 = gen_neurons(N1),
-%%   L2 = gen_neurons(N2),
-%%   link:register_rnd(L1, L2),
-%%   {neurons, [L1, L2]};
-%% generate_perceptron_data([H | T]) ->
-%%   L1 = gen_neurons(H),
-%%   R = generate_perceptron_data(T),
-%%   {neurons, L2} = R,
-%%   [HL2 | _] = L2,
-%%   link:register_rnd(L1, HL2),
-%%   {neurons, [L1 | L2]}.
-%%
-%%
-%% generate_perceptron(N) ->
-%%   D = [{type, perceptron}, {layers_sizes, N}, generate_perceptron_data(N)],
-%%   io:format("D=~w~n", [D]),
-%%   spawn(net, loop, [D]).
-%%
-%%
-%% loop(N) ->
-%%   receive
-%%     {Pid, stop} ->
-%%       {neurons, L} = lists:keyfind(neurons, 1, N),
-%%       FL = lists:flatten(L),
-%%       lists:foreach(fun(P) -> P ! {self(), stop} end, FL),
-%%       io:format("Net~w stop~n", [self()]);
-%%     {Pid, print} ->
-%%       io:format("Net~w:~n", [self()]),
-%%       {neurons, L} = lists:keyfind(neurons, 1, N),
-%%       FL = lists:flatten(L),
-%%       lists:foreach(fun(P) -> P ! {self(), print} end, FL),
-%%       loop(N);
-%%     {Pid, pulse, P} ->
-%%       {neurons, [H | _]} = lists:keyfind(neurons, 1, N),
-%% %%       io:format("Net~w: pulse to neurons...~n", [self()]),
-%%       neuron:pulse_to_neurons_list(H, P),
-%%       receive
-%%         {effect, Value} ->
-%% %%           io:format("Net receive pulse value: ~w~n", [Value]),
-%%           Pid ! {reply, self(), {effect, Value}};
-%%         Other ->
-%%           io:format("Net~w receiving: ~w~n", [self(), Other])
-%%
-%%       end,
-%%       loop(N)
-%%
-%%
-%%   after
-%%     25000 ->
-%%       io:format("Net~w timeout~n", [self()])
-%%   end.
