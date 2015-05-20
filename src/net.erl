@@ -10,7 +10,7 @@
 -author("prokopiy").
 
 %% API
--export([loop/1, new/2, generate_layer/1, test/0, print/1, stop/1]).
+-export([loop/1, new/2, generate_layer/1, test/0, print/1, stop/1, pulse/2]).
 
 
 new(Layers, Memory_length) ->
@@ -18,26 +18,36 @@ new(Layers, Memory_length) ->
   Receptors_size = lists:nth(1, Layers),
   L1 = generate_layer(lists:duplicate(Receptors_size, 0)),
 
-  Effectors_size = lists:last(Layers),
-  L3 = generate_layer(lists:duplicate(Effectors_size, 0)),
+  M = lists:flatten(lists:map(fun(P) -> L = generate_layer(lists:seq(0, Memory_length)), neuron:register_link(P, L, 1),
+    L end, L1)),
 
   Hidden_layers = lists:sublist(Layers, 2, length(Layers) - 2),
   L2 = generate_hidden_layers(Hidden_layers),
 
-  lists:foreach(fun(P) -> neuron:register_link(P, L3, 1) end, L1),
+  Effectors_size = lists:last(Layers),
+  L3 = generate_layer(lists:duplicate(Effectors_size, 0)),
+
+
+%%   lists:foreach(fun(P) -> neuron:register_link(P, L3, 1) end, L1),
+
+
+  link:register_layer_to_layer(M, lists:nth(1, L2)),
+  link:register_between_layers(L2),
+  link:register_layer_to_layer(lists:last(L2), L3),
 
   Data = #{
     hidden_layers => L2,
     receptors => L1,
     effectors => L3,
-    memory => []
+    memory => M
   },
   spawn(net, loop, [Data]).
 
 
 test() ->
-  Net1 = new([3, 2, 3, 1], 5),
+  Net1 = new([3, 2, 2, 1], 1),
   print(Net1),
+  pulse(Net1, [1, 1, 1]),
   true.
 
 
@@ -46,6 +56,10 @@ print(Net) when is_pid(Net) ->
 
 stop(Net) when is_pid(Net) ->
   Net ! {request, self(), stop}.
+
+pulse(Net, Powers) when is_pid(Net), is_list(Powers) ->
+  Net ! {request, self(), {pulse, Powers}}.
+
 
 
 
@@ -58,7 +72,6 @@ generate_layer([H | T], Acc) ->
   generate_layer(T, Acc ++ [N]).
 
 
-
 generate_hidden_layers(L) ->
   generate_hidden_layers(L, []).
 generate_hidden_layers([], Acc) ->
@@ -68,6 +81,13 @@ generate_hidden_layers([H | T], Acc) ->
   generate_hidden_layers(T, Acc ++ [L]).
 
 
+pulse_to_layer([], []) ->
+  true;
+pulse_to_layer([NH | NT], [PH | PT]) when is_pid(NH) ->
+  neuron:pulse(NH, PH),
+  pulse_to_layer(NT, PT).
+
+
 
 loop(Data) ->
   receive
@@ -75,13 +95,20 @@ loop(Data) ->
       loop(Data);
     {request, Pid, print} ->
       io:format("Net~w ~w~n", [self(), Data]),
+      io:format("Receptor layer:~n"),
       neuron:print(maps:get(receptors, Data)),
+      io:format("Memory layer:~n"),
+      neuron:print(maps:get(memory, Data)),
+      io:format("Hidden layer:~n"),
+      lists:foreach(fun(P) -> neuron:print(P) end, maps:get(hidden_layers, Data)),
+      io:format("Effector layer:~n"),
       neuron:print(maps:get(effectors, Data)),
 %%       Pid ! {reply, self(), ok},
       loop(Data);
-    {request, Pid, {pulse, From, PowerList}} ->
-       {receptors, FL} = lists:keyfind(receptors, 1, Data),
-       lists:foreach(fun(P) -> P ! {self(), stop} end, FL)
+    {request, Pid, {pulse, PowerList}} ->
+      Receptors = maps:get(receptors, Data),
+      pulse_to_layer(Receptors, PowerList),
+      loop(Data)
 
   after
     25000 ->

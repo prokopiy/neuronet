@@ -41,9 +41,10 @@ call(Pid, Message) ->
 
 
 print(Neuron_pid) when is_pid(Neuron_pid) ->
-  Neuron_pid ! {request, self(), print};
-print([Neuron_pid]) ->
-  Neuron_pid ! {request, self(), print};
+%%   Neuron_pid ! {request, self(), print};
+  call(Neuron_pid, print);
+print([]) ->
+  true;
 print([H | T]) ->
   print(H),
   print(T).
@@ -60,8 +61,13 @@ register_link(Pid_neuron_from, List_neurons_to, W) when is_pid(Pid_neuron_from),
   lists:foreach(fun(P) -> register_link(Pid_neuron_from, P, W) end, List_neurons_to).
 
 
+
 pulse(Neuron_pid, Value) when is_pid(Neuron_pid) ->
   Neuron_pid ! {request, self(), {pulse, self(), Value}}.
+
+
+
+
 
 
 loop(Data) ->
@@ -70,7 +76,7 @@ loop(Data) ->
       loop(Data);
     {request, Pid, print} ->
       io:format("Neuron~w ~w~n", [self(), Data]),
-%%       Pid ! {reply, self(), ok},
+      Pid ! {reply, self(), ok},
       loop(Data);
     {request, Pid, stop} ->
       io:format("Neuron~w stopped~n", [self()]);
