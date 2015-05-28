@@ -89,6 +89,25 @@ pulse_to_layer([NH | NT], [PH | PT]) when is_pid(NH) ->
 
 
 
+get_effect(Effectors, Data) when is_list(Effectors), is_map(Data) ->
+%%   io:format("EFFFFFFFFFFFFFFFFFF,~w~n", [Effectors]),
+  case {length(Effectors), maps:size(Data)} of
+    {_X, _X} ->
+      R = lists:map(fun(P) -> maps:get(P, Data) end, Effectors),
+      R;
+    {_X, _Y} ->
+      io:format("~w X,Y=,~w, ~w~n", [self(), _X, _Y]),
+      receive
+        {reply, Pid, {effect, Value}} ->
+          NewData = maps:put(Pid, Value, Data),
+          get_effect(Effectors, NewData)
+      after
+        20000 ->
+          {error, timeout}
+      end
+  end.
+
+
 loop(Data) ->
   receive
     {reply, _, ok} ->
@@ -108,6 +127,9 @@ loop(Data) ->
     {request, Pid, {pulse, PowerList}} ->
       Receptors = maps:get(receptors, Data),
       pulse_to_layer(Receptors, PowerList),
+      Effect = get_effect(maps:get(effectors, Data), #{}),
+      Pid ! {repy, self(), {effect, Effect}},
+      io:format("Net~w: send effect ~w to ~w~n", [self(), Effect, Pid]),
       loop(Data)
 
   after
