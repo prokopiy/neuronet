@@ -142,7 +142,8 @@ loop(Data) ->
 
   after
     15000 ->
-      io:format("Neuron~w timeout~n", [self()])
+%%       io:format("Neuron~w timeout~n", [self()])
+      true
   end.
 
 
@@ -155,7 +156,7 @@ gen_clean_memory(Length) ->
 calc_and_pulse_all(PidN, {PidFrom, Power}, Map) ->
   Fun = fun(K, W, Acc) when is_pid(K) ->
     K ! {request, PidN, {pulse, PidFrom, Power * W}},
-    io:format("~w: Create pulse ~w to ~w~n", [self(), Power * W, K]),
+%%     io:format("~w: Create pulse ~w to ~w~n", [self(), Power * W, K]),
     Acc
   end,
   maps:fold(Fun, 0, Map).

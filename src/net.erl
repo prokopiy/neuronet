@@ -27,6 +27,10 @@ new(Layers, Memory_length) ->
   Effectors_size = lists:last(Layers),
   L3 = generate_layer(lists:duplicate(Effectors_size, 0)),
 
+  T = generate_layer(lists:duplicate(2, 0)),
+
+%%   io:format("Flatten = ~w~n", [lists:flatten(L2 ++ L3)]),
+
 
 %%   lists:foreach(fun(P) -> neuron:register_link(P, L3, 1) end, L1),
 
@@ -34,20 +38,23 @@ new(Layers, Memory_length) ->
   link:register_layer_to_layer(M, lists:nth(1, L2)),
   link:register_between_layers(L2),
   link:register_layer_to_layer(lists:last(L2), L3),
+  link:register_layer_to_layer(T, lists:flatten(L2 ++ L3)),
 
   Data = #{
     hidden_layers => L2,
     receptors => L1,
     effectors => L3,
-    memory => M
+    memory => M,
+    tone => T
   },
   spawn(net, loop, [Data]).
 
 
 test() ->
-  Net1 = new([3, 2, 2, 1], 1),
-  print(Net1),
-  pulse(Net1, [1, 1, 1]),
+  Net1 = new([40, 20, 10, 2], 10),
+%%   print(Net1),
+  R1 = pulse(Net1, lists:duplicate(40, 1)),
+  io:format("~w Result = ~w~n", [self(), R1]),
   true.
 
 
@@ -58,7 +65,10 @@ stop(Net) when is_pid(Net) ->
   Net ! {request, self(), stop}.
 
 pulse(Net, Powers) when is_pid(Net), is_list(Powers) ->
-  Net ! {request, self(), {pulse, Powers}}.
+  Net ! {request, self(), {pulse, Powers}},
+  receive
+    {reply, Net, {effect, Reply}} -> Reply
+  end.
 
 
 
@@ -96,13 +106,13 @@ get_effect(Effectors, Data) when is_list(Effectors), is_map(Data) ->
       R = lists:map(fun(P) -> maps:get(P, Data) end, Effectors),
       R;
     {_X, _Y} ->
-      io:format("~w X,Y=,~w, ~w~n", [self(), _X, _Y]),
+%%       io:format("~w X,Y=,~w, ~w~n", [self(), _X, _Y]),
       receive
         {reply, Pid, {effect, Value}} ->
           NewData = maps:put(Pid, Value, Data),
           get_effect(Effectors, NewData)
       after
-        20000 ->
+        25000 ->
           {error, timeout}
       end
   end.
@@ -122,13 +132,18 @@ loop(Data) ->
       lists:foreach(fun(P) -> neuron:print(P) end, maps:get(hidden_layers, Data)),
       io:format("Effector layer:~n"),
       neuron:print(maps:get(effectors, Data)),
+      io:format("Tone layer:~n"),
+      neuron:print(maps:get(tone, Data)),
+
 %%       Pid ! {reply, self(), ok},
       loop(Data);
     {request, Pid, {pulse, PowerList}} ->
       Receptors = maps:get(receptors, Data),
+      Tone = maps:get(tone, Data),
       pulse_to_layer(Receptors, PowerList),
+      pulse_to_layer(Tone, [-1, 1]),
       Effect = get_effect(maps:get(effectors, Data), #{}),
-      Pid ! {repy, self(), {effect, Effect}},
+      Pid ! {reply, self(), {effect, Effect}},
       io:format("Net~w: send effect ~w to ~w~n", [self(), Effect, Pid]),
       loop(Data)
 
