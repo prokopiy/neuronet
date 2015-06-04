@@ -10,7 +10,7 @@
 -author("prokopiy").
 
 %% API
--export([loop/1, new/2, generate_layer/1, test/0, print/1, stop/1, pulse/2]).
+-export([loop/1, new/2, test/0, print/1, stop/1, pulse/2]).
 
 
 new(Layers, Memory_length) ->
@@ -29,11 +29,6 @@ new(Layers, Memory_length) ->
 
   T = generate_layer(lists:duplicate(2, 0)),
 
-%%   io:format("Flatten = ~w~n", [lists:flatten(L2 ++ L3)]),
-
-
-%%   lists:foreach(fun(P) -> neuron:register_link(P, L3, 1) end, L1),
-
 
   link:register_layer_to_layer(M, lists:nth(1, L2)),
   link:register_between_layers(L2),
@@ -45,16 +40,32 @@ new(Layers, Memory_length) ->
     receptors => L1,
     effectors => L3,
     memory => M,
-    tone => T
+    tone => T,
+    last_out => []
+
   },
   spawn(net, loop, [Data]).
 
 
 test() ->
-  Net1 = new([40, 20, 10, 2], 10),
+  Net1 = new([2, 3, 2, 1], 2),
 %%   print(Net1),
-  R1 = pulse(Net1, lists:duplicate(40, 1)),
-  io:format("~w Result = ~w~n", [self(), R1]),
+  pulse(Net1, [1, 1]),
+  true_output(Net1, [1]),
+  pulse(Net1, [1, 1]),
+  true_output(Net1, [0]),
+  pulse(Net1, [0, 1]),
+  true_output(Net1, [0]),
+  pulse(Net1, [0, 1]),
+  true_output(Net1, [1]),
+  pulse(Net1, [1, 1]),
+  true_output(Net1, [1]),
+  pulse(Net1, [1, 1]),
+  true_output(Net1, [0]),
+
+%%    back_error(Net1, [-0.5]),
+%%   io:get_line("Press111111111 <Enter> to exit..."),
+%%   print(Net1),
   true.
 
 
@@ -70,6 +81,17 @@ pulse(Net, Powers) when is_pid(Net), is_list(Powers) ->
     {reply, Net, {effect, Reply}} -> Reply
   end.
 
+back_error(Net, Error) when is_pid(Net) ->
+  Net ! {request, self(), {back_error, Error}},
+  receive
+    {reply, Net, {confirm_back_error, ok}} -> ok
+  end.
+
+true_output(Net, L) when is_pid(Net), is_list(L) ->
+  Net ! {request, self(), {true_output, L}},
+  receive
+    {reply, Net, {confirm_true_output, ok}} -> ok
+  end.
 
 
 
@@ -99,18 +121,34 @@ pulse_to_layer([NH | NT], [PH | PT]) when is_pid(NH) ->
 
 
 
-get_effect(Effectors, Data) when is_list(Effectors), is_map(Data) ->
+get_effect(Effectors, EffectAcc) when is_list(Effectors), is_map(EffectAcc) ->
 %%   io:format("EFFFFFFFFFFFFFFFFFF,~w~n", [Effectors]),
-  case {length(Effectors), maps:size(Data)} of
+  case {length(Effectors), maps:size(EffectAcc)} of
     {_X, _X} ->
-      R = lists:map(fun(P) -> maps:get(P, Data) end, Effectors),
+      R = lists:map(fun(P) -> maps:get(P, EffectAcc) end, Effectors),
       R;
     {_X, _Y} ->
 %%       io:format("~w X,Y=,~w, ~w~n", [self(), _X, _Y]),
       receive
         {reply, Pid, {effect, Value}} ->
-          NewData = maps:put(Pid, Value, Data),
-          get_effect(Effectors, NewData)
+          NewEffectAcc = maps:put(Pid, Value, EffectAcc),
+          get_effect(Effectors, NewEffectAcc)
+      after
+        25000 ->
+          {error, timeout}
+      end
+  end.
+
+confirm_back_error(Effectors, Acc) when is_list(Effectors), is_map(Acc) ->
+  case {length(Effectors), maps:size(Acc)} of
+    {_X, _X} ->
+      {ok, ok};
+    {_X, _Y} ->
+      receive
+        {reply, Pid, {confirm_back_error, Value}} ->
+%%           io:format("~w confirm_back_error Pid=,~w, ~w~n", [self(), Pid, Value]),
+          NewAcc = maps:put(Pid, Value, Acc),
+          confirm_back_error(Effectors, NewAcc)
       after
         25000 ->
           {error, timeout}
@@ -122,6 +160,8 @@ loop(Data) ->
   receive
     {reply, _, ok} ->
       loop(Data);
+    {request, _, stop} ->
+      true;
     {request, Pid, print} ->
       io:format("Net~w ~w~n", [self(), Data]),
       io:format("Receptor layer:~n"),
@@ -134,7 +174,6 @@ loop(Data) ->
       neuron:print(maps:get(effectors, Data)),
       io:format("Tone layer:~n"),
       neuron:print(maps:get(tone, Data)),
-
 %%       Pid ! {reply, self(), ok},
       loop(Data);
     {request, Pid, {pulse, PowerList}} ->
@@ -144,7 +183,37 @@ loop(Data) ->
       pulse_to_layer(Tone, [-1, 1]),
       Effect = get_effect(maps:get(effectors, Data), #{}),
       Pid ! {reply, self(), {effect, Effect}},
+      NewData1 = maps:put(last_out, Effect, Data),
       io:format("Net~w: send effect ~w to ~w~n", [self(), Effect, Pid]),
+      loop(NewData1);
+
+    {request, Pid, {back_error, Errors}} when is_list(Errors) ->
+      io:format("Net~w: request error = ~w ~n", [self(), Errors]),
+
+      Effectors = maps:get(effectors, Data),
+
+      Zip = lists:zip(Effectors, Errors),
+
+      lists:foreach(fun(P) -> {N, E} = P, N ! {request, self(), {back_error, E}} end, Zip),
+
+      confirm_back_error(Effectors, #{}),
+      Pid ! {reply, self(), {confirm_back_error, ok}},
+      loop(Data);
+
+    {request, Pid, {true_output, L}} ->
+%%       io:format("Net~w: request true_output = ~w ~n", [self(), L]),
+
+      Last_out = maps:get(last_out, Data),
+      Effectors = maps:get(effectors, Data),
+      Errors = lists:zipwith(fun(X, Y) -> X - Y end, L, Last_out),
+
+      Zip = lists:zip(Effectors, Errors),
+      lists:foreach(fun(P) -> {N, E} = P, N ! {request, self(), {back_error, E}} end, Zip),
+      confirm_back_error(Effectors, #{}),
+
+      io:format("Net~w: Errors = ~w ~n", [self(), Errors]),
+
+      Pid ! {reply, self(), {confirm_true_output, ok}},
       loop(Data)
 
   after

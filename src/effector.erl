@@ -10,23 +10,6 @@
 -author("prokopiy").
 
 %% API
--export([new/0, loop/1]).
+-export([]).
 
 %%
-
-new() ->
-  E = [],
-  spawn(effector, loop, [E]).
-
-
-
-loop(N) ->
-  receive
-    {pulse, PidN, Power} ->
-      io:format("Effector~w: ~w~n", [self(), Power]),
-      loop(N)
-
-  after
-    27000 ->
-      io:format("Effector~w timeout~n", [self()])
-  end.

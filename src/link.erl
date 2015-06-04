@@ -14,7 +14,7 @@
 %%
 
 register_neuron_to_neuron(Pid_neuron_from, Pid_neuron_to) ->
-  neuron:register_link(Pid_neuron_from, Pid_neuron_to, random:uniform()).
+  neuron:register_link(Pid_neuron_from, Pid_neuron_to, 0.5 - random:uniform()).
 
 register_neuron_to_neuron(Pid_neuron_from, Pid_neuron_to, W) ->
   neuron:register_link(Pid_neuron_from, Pid_neuron_to, W).
@@ -42,6 +42,8 @@ register_layer_to_layer([H1 | T1], L, [WH | WT]) ->
   register_layer_to_layer(T1, L, WT).
 
 
+register_between_layers([_]) ->
+  true;
 register_between_layers([L1, L2]) ->
   register_layer_to_layer(L1, L2).
 
