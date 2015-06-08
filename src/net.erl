@@ -10,7 +10,7 @@
 -author("prokopiy").
 
 %% API
--export([loop/1, new/2, test/0, print/1, stop/1, pulse/2]).
+-export([loop/1, new/2, test/0, print/1, stop/1, pulse/2, true_output/2]).
 
 
 new(Layers, Memory_length) ->
@@ -48,20 +48,30 @@ new(Layers, Memory_length) ->
 
 
 test() ->
-  Net1 = new([2, 3, 2, 1], 2),
+  Net1 = new([4, 3, 2, 1], 5),
 %%   print(Net1),
-  pulse(Net1, [1, 1]),
+  pulse(Net1, [0.9, 0.8, 0.7, 0.1]),
   true_output(Net1, [1]),
-  pulse(Net1, [1, 1]),
-  true_output(Net1, [0]),
-  pulse(Net1, [0, 1]),
-  true_output(Net1, [0]),
-  pulse(Net1, [0, 1]),
+
+  pulse(Net1, [0.9, 0.8, 0.7, 0.1]),
   true_output(Net1, [1]),
-  pulse(Net1, [1, 1]),
+
+  pulse(Net1, [0.9, 0.8, 0.7, 0.1]),
   true_output(Net1, [1]),
-  pulse(Net1, [1, 1]),
-  true_output(Net1, [0]),
+
+  pulse(Net1, [0.9, 0.8, 0.7, 0.1]),
+  true_output(Net1, [1]),
+
+  pulse(Net1, [0.9, 0.8, 0.7, 0.1]),
+  true_output(Net1, [1]),
+
+  pulse(Net1, [0.9, 0.8, 0.7, 0.1]),
+  true_output(Net1, [1]),
+
+  pulse(Net1, [0.9, 0.8, 0.7, 0.1]),
+  true_output(Net1, [1]),
+
+
 
 %%    back_error(Net1, [-0.5]),
 %%   io:get_line("Press111111111 <Enter> to exit..."),
